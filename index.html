@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aero-Glass Quiz</title>
+    <style>
+        /* Modern iOS Typography & Variables */
+        :root {
+            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif;
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 120, 180, 0.3);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: var(--font-main);
+            /* Frutiger Aero inspired vibrant gradient background */
+            background: radial-gradient(circle at 10% 20%, rgb(173, 240, 255) 0%, rgb(155, 255, 201) 40%, rgb(73, 178, 252) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Ambient floating orbs (Aero touch) */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            z-index: 0;
+            opacity: 0.6;
+        }
+        .orb-1 { width: 300px; height: 300px; background: #00ffcc; top: -50px; left: -50px; }
+        .orb-2 { width: 400px; height: 400px; background: #0088ff; bottom: -100px; right: -50px; }
+
+        /* iOS Glassmorphism Card */
+        .quiz-container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 450px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            box-shadow: var(--glass-shadow);
+            padding: 40px 30px;
+            text-align: center;
+            color: #1a4f66;
+            transition: transform 0.3s ease;
+        }
+
+        /* Screens */
+        #startScreen, #quizScreen, #endScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Start Screen Specifics */
+        #startScreen {
+            display: flex; /* Visible by default */
+        }
+
+        #startScreen h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        #startScreen p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        /* Custom File Input Styling */
+        .custom-file-upload {
+            background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 20px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #0c3e55;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .custom-file-upload:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Header (Lives & Score) */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .lives {
+            display: flex;
+            gap: 5px;
+            color: #ff3b30;
+            font-size: 1.5rem;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Glossy Buttons */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .option-btn {
+            background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 100%);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 16px;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0c3e55;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05), inset 0 2px 4px rgba(255,255,255,0.5);
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .option-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.6);
+        }
+
+        .option-btn:active {
+            transform: translateY(1px);
+        }
+
+        .option-btn.correct {
+            background: linear-gradient(180deg, rgba(52, 199, 89, 0.8) 0%, rgba(40, 167, 69, 0.6) 100%);
+            color: white;
+            border-color: rgba(52, 199, 89, 0.9);
+        }
+
+        .option-btn.wrong {
+            background: linear-gradient(180deg, rgba(255, 59, 48, 0.8) 0%, rgba(220, 53, 69, 0.6) 100%);
+            color: white;
+            border-color: rgba(255, 59, 48, 0.9);
+        }
+
+        /* End Screen */
+        .end-screen h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .end-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+            transition: all 0.2s ease;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .action-btn:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="quiz-container" id="quizContainer">
+
+        <div id="startScreen">
+            <h1>Aero Quiz</h1>
+            <p>Upload a .json file to begin</p>
+            <label class="custom-file-upload">
+                <input type="file" id="jsonUpload" accept=".json" />
+                Select File
+            </label>
+        </div>
+
+        <div id="quizScreen">
+            <div class="header">
+                <div class="score">Score: <span id="scoreDisplay">0</span></div>
+                <div class="lives" id="livesDisplay">❤️ ❤️ ❤️</div>
+            </div>
+            <div class="question-text" id="questionText">Loading...</div>
+            <div class="options-grid" id="optionsGrid"></div>
+        </div>
+
+        <div id="endScreen" class="end-screen">
+            <h2 id="endTitle">Game Over!</h2>
+            <p>Final Score: <span id="finalScoreDisplay">0</span> / <span id="totalQuestionsDisplay">0</span></p>
+            <button class="action-btn" onclick="retrySameQuiz()">Retry Quiz</button>
+            <button class="action-btn" style="background: #34c759; box-shadow: 0 4px 15px rgba(52, 199, 89, 0.4);" onclick="goToStart()">Upload New File</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let lives = 3;
+        let isAnswering = false;
+
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const quizScreen = document.getElementById('quizScreen');
+        const endScreen = document.getElementById('endScreen');
+
+        const fileInput = document.getElementById('jsonUpload');
+        const questionText = document.getElementById('questionText');
+        const optionsGrid = document.getElementById('optionsGrid');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const quizContainer = document.getElementById('quizContainer');
+        const endTitle = document.getElementById('endTitle');
+        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+        const totalQuestionsDisplay = document.getElementById('totalQuestionsDisplay');
+
+        // Handle File Upload
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+
+                    // Simple validation to ensure it's an array and has at least one question
+                    if (!Array.isArray(parsedData) || parsedData.length === 0 || !parsedData[0].question) {
+                        throw new Error("Invalid JSON format. Please ensure it is an array of question objects.");
+                    }
+
+                    questions = parsedData;
+                    initGame();
+                } catch (error) {
+                    alert("Error reading file: " + error.message);
+                    fileInput.value = ''; // Reset input
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Initialize Game
+        function initGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            lives = 3;
+            isAnswering = false;
+
+            startScreen.style.display = 'none';
+            endScreen.style.display = 'none';
+            quizScreen.style.display = 'flex';
+
+            updateHeader();
+            loadQuestion();
+        }
+
+        // Retry same quiz
+        function retrySameQuiz() {
+            initGame();
+        }
+
+        // Go back to start screen to upload a new file
+        function goToStart() {
+            fileInput.value = ''; // Clear previous file
+            endScreen.style.display = 'none';
+            quizScreen.style.display = 'none';
+            startScreen.style.display = 'flex';
+        }
+
+        // Update Score and Lives UI
+        function updateHeader() {
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = '❤️'.repeat(lives);
+        }
+
+        // Load a question to the UI
+        function loadQuestion() {
+            isAnswering = false;
+            const currentQuestion = questions[currentQuestionIndex];
+            questionText.textContent = currentQuestion.question;
+
+            optionsGrid.innerHTML = ''; // Clear previous options
+
+            currentQuestion.options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'option-btn';
+                button.textContent = option;
+                button.onclick = () => handleAnswer(button, option, currentQuestion.answer);
+                optionsGrid.appendChild(button);
+            });
+        }
+
+        // Handle User Selection
+        function handleAnswer(button, selectedOption, correctAnswer) {
+            if (isAnswering) return; 
+            isAnswering = true;
+
+            const isCorrect = selectedOption === correctAnswer;
+
+            if (isCorrect) {
+                button.classList.add('correct');
+                score++;
+            } else {
+                button.classList.add('wrong');
+                lives--;
+                quizContainer.classList.add('shake'); 
+                setTimeout(() => quizContainer.classList.remove('shake'), 400);
+
+                // Highlight correct answer
+                Array.from(optionsGrid.children).forEach(btn => {
+                    if (btn.textContent === correctAnswer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            updateHeader();
+
+            setTimeout(() => {
+                if (lives <= 0) {
+                    showEndScreen(false);
+                } else {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex >= questions.length) {
+                        showEndScreen(true);
+                    } else {
+                        loadQuestion();
+                    }
+                }
+            }, 1200);
+        }
+
+        // Show Game Over / Victory Screen
+        function showEndScreen(isVictory) {
+            quizScreen.style.display = 'none';
+            endScreen.style.display = 'flex';
+
+            if (isVictory) {
+                endTitle.textContent = "Quiz Complete! ✨";
+            } else {
+                endTitle.textContent = "Game Over! 💔";
+            }
+
+            finalScoreDisplay.textContent = score;
+            totalQuestionsDisplay.textContent = questions.length;
+        }
+    </script>
+</body>
+</html>
